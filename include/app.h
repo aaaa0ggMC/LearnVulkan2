@@ -6,6 +6,14 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
+struct QueueFamilyIndices{
+    std::optional<uint32_t> graphics;
+
+    bool is_complete(){
+        return (bool)graphics;
+    }
+};
+
 struct App{
     /// 配置文件
     alib5::AData & config;
@@ -44,14 +52,18 @@ struct App{
     void endup();
 
     /// Vulkan相关
-    VkInstance instance { nullptr };
-    VkDebugUtilsMessengerEXT debug_messenger { nullptr };
+    VkInstance instance { VK_NULL_HANDLE };
+    VkDebugUtilsMessengerEXT debug_messenger { VK_NULL_HANDLE };
+    VkPhysicalDevice physical_device { VK_NULL_HANDLE };
+    QueueFamilyIndices queue_family;
+
     int enable_validation_layer_steps { 2 };
     bool allow_posts [5] {true};
 
 
     void _vk_create_instance();
     void _vk_setup_debug_callback();
+    void _vk_pick_physical_device();
 };
 
 #endif

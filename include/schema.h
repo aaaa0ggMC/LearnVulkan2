@@ -32,21 +32,28 @@ inline std::string_view str_schema = R"({
         ],
         "api_version" : [
             "TUPLE",
-            ["OPTIONAL TYPE INT MIN 0 MAX 127", 0 , "Variant Version"],
-            ["OPTIONAL TYPE INT MIN 0 MAX 511", 1 , "Major Version"],
+            ["OPTIONAL TYPE INT MIN 0 MAX 7", 0 , "Variant Version"],
+            ["OPTIONAL TYPE INT MIN 0 MAX 127", 1 , "Major Version"],
             ["OPTIONAL TYPE INT MIN 0 MAX 1023", 3 , "Minor Version"],
-            ["OPTIONAL TYPE INT MIN 0 MAX 63", 0 , "Patch Version"]
+            ["OPTIONAL TYPE INT MIN 0 MAX 4095", 0 , "Patch Version"]
         ],
         "engine_name" : ["OPTIONAL TYPE STRING","No Engine"],
-        "extensions" : ["REQUIRED TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
-        "layers" : ["REQUIRED TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
+        "extensions" : ["OPTIONAL TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
+        "layers" : ["OPTIONAL TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
         "debug_allow" : {
-            "verbose" : ["REQUIRED TYPE BOOL" , true],
-            "info" : ["REQUIRED TYPE BOOL" , true],
-            "warn" : ["REQUIRED TYPE BOOL" , true],
-            "error" : ["REQUIRED TYPE BOOL" , true],
-            "others" : ["REQUIRED TYPE BOOL" , true]
-        }
+            "verbose" : ["OPTIONAL TYPE BOOL" , true],
+            "info" : ["OPTIONAL TYPE BOOL" , true],
+            "warn" : ["OPTIONAL TYPE BOOL" , true],
+            "error" : ["OPTIONAL TYPE BOOL" , true],
+            "others" : ["OPTIONAL TYPE BOOL" , true]
+        },
+        "score_multiplier" : {
+            "api_version" : ["TYPE DOUBLE", 0.6 ],
+            "discrete_gpu" : ["TYPE DOUBLE", 2.0 ],
+            "image_dim2d" : ["TYPE DOUBLE", 0.2 ],
+            "need_geometry" : ["TYPE BOOL" , true],
+            "fail_load" : ["TYPE BOOL" , false]
+        },
     }
 })";
 #endif

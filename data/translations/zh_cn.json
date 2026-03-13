@@ -6,7 +6,8 @@
         "vulkan" : "GLFW支持Vulkan.",
         "window" : "成功创建{0}x{1}的窗口\"{2}\".",
         "vk_instance" : "成功创建VkInstance,API版本:{0},启用扩展{1},启用层级{2}.",
-        "create_debug_messenger" : "创建VkDebugMessenger成功."
+        "create_debug_messenger" : "创建VkDebugMessenger成功.",
+        "selecting_gpu" : "选择GPU\"{}\",得分:{:.2f}."
     },
     "bad" : {
         "vulkan" : "GLFW不支持Vulkan!",
@@ -16,12 +17,16 @@
         "layer_not_found" : "找不到下列({0}个)层级:{1}",
         "debug_messenger" : "找不到函数来初始化验证器,验证器已被禁用!",
         "create_debug_messenger" : "创建VkDebugMessenger失败,错误码{0}!",
-        "destroy_debug_messenger" : "找不到函数来销毁验证器!"
+        "destroy_debug_messenger" : "找不到函数来销毁验证器!",
+        "no_phy_dev" : "找不到任何一个物理显卡设备!",
+        "no_gpu_satisfiable" : "没有任何GPU满足程序需求!"
     },
     "check" : {
         "glfw_ext" : "GLFW支持{0}个扩展,为:",
         "vk_instance_ext" : "VulkanInstance支持{0}个扩展,为:",
-        "vk_instance_layers" : "VulkanInstance支持{0}个层级,为:"
+        "vk_instance_layers" : "VulkanInstance支持{0}个层级,为:",
+        "physical_device" : "找到{0}个物理设备,为:",
+        "gpu_score" : "GPU\"{}\"得分为{:.2f}."
     },
     "cleanup" : "清理中......"
 }

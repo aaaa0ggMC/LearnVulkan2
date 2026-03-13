@@ -56,6 +56,119 @@ void App::_setup_vulkan(){
     _vk_create_instance();
     /// 初始化VulkanCallback
     if(!enable_validation_layer_steps)_vk_setup_debug_callback();
+    /// 选择物理设备
+    _vk_pick_physical_device();
+}
+
+static QueueFamilyIndices find_queue_families(VkPhysicalDevice dev){
+    QueueFamilyIndices q;
+    uint32_t qf_count;
+    vkGetPhysicalDeviceQueueFamilyProperties(dev, &qf_count, nullptr);
+    std::vector<VkQueueFamilyProperties> properties(qf_count);
+    vkGetPhysicalDeviceQueueFamilyProperties(dev, &qf_count, properties.data());
+
+    size_t i = 0;
+    for(auto & p : properties){
+        if(p.queueFlags & VK_QUEUE_GRAPHICS_BIT){
+            q.graphics.emplace(i);
+        }
+
+        ++i;
+    }
+    return q;
+}
+
+void App::_vk_pick_physical_device(){
+    uint32_t physical_device_count = 0;
+    vkEnumeratePhysicalDevices(instance,&physical_device_count,nullptr);
+    if(physical_device_count == 0){
+        lg(Error) << translator->translate("bad.no_phy_dev") << endlog;
+        throw "Bad GUY!";
+    }
+    std::vector<VkPhysicalDevice> devices(physical_device_count);
+    std::vector<VkPhysicalDeviceProperties> properties;
+    std::vector<VkPhysicalDeviceFeatures> features;
+    std::vector<std::string> device_info;
+    vkEnumeratePhysicalDevices(instance,&physical_device_count,devices.data());
+    
+    size_t index = 0;
+    double highest_score = 0;
+    int highest_index = -1;
+    QueueFamilyIndices highest_qf;
+
+    double mul_api_score = config.jump("/vulkan/score_multiplier/api_version").to<double>();
+    double mul_img2d_score = config.jump("/vulkan/score_multiplier/image_dim2d").to<double>();
+    double mul_discrete = config.jump("/vulkan/score_multiplier/discrete_gpu").to<double>();
+    bool need_geometry = config.jump("/vulkan/score_multiplier/need_geometry").to<bool>();
+    bool fail_load = config.jump("/vulkan/score_multiplier/fail_load").to<bool>();
+    
+    for(auto & dev : devices){
+        double score = 0;
+        
+        VkPhysicalDeviceProperties deviceProperties {};
+        VkPhysicalDeviceFeatures deviceFeatures {};
+        vkGetPhysicalDeviceProperties(dev, &deviceProperties);
+        vkGetPhysicalDeviceFeatures(dev, &deviceFeatures);
+        properties.emplace_back(deviceProperties);
+        features.emplace_back(deviceFeatures);
+
+        /// 计算分数以及highest
+        double api_score = 
+            (VK_API_VERSION_MAJOR(deviceProperties.apiVersion) * 1024 + 
+            VK_API_VERSION_MINOR(deviceProperties.apiVersion)) * mul_api_score;
+
+        double image_score = deviceProperties.limits.maxImageDimension2D * mul_img2d_score;
+
+        score = api_score + image_score;
+        // 如果是独显,那么最终分数乘上multiplier
+        if(deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)score *= mul_discrete;
+        
+        auto queue_family = find_queue_families(dev);
+        // 这里是必需的成分
+        if(need_geometry && deviceFeatures.geometryShader == VK_FALSE)score = -1;
+        else if(fail_load)score = -2; // 固定设置
+        else if(!queue_family.is_complete()){
+            score = -3;
+        }
+        
+        // 结算
+        if(score > highest_score){
+            highest_index = index;
+            highest_score = score;
+            highest_qf = queue_family;
+        }
+
+
+        auto & str = device_info.emplace_back(deviceProperties.deviceName);
+        str += "@Vulkan";
+        auto specVersion = deviceProperties.apiVersion;
+        str += std::to_string(VK_API_VERSION_VARIANT(specVersion)) + "." +
+               std::to_string(VK_API_VERSION_MAJOR(specVersion)) + "." +
+               std::to_string(VK_API_VERSION_MINOR(specVersion)) + "." +
+               std::to_string(VK_API_VERSION_PATCH(specVersion));
+        lg << translator->translate("check.gpu_score",
+            device_info[index],
+            score
+        ) << endlog;
+        
+        ++index;
+    }
+    lg << translator->translate("check.physical_device",
+        device_info.size()
+    ) << LOG_COLOR3(Cyan, None, Dim) << device_info << endlog;
+
+    if(highest_index == -1){
+        lg(Error) << translator->translate("bad.no_gpu_satisfiable") << endlog;
+        throw "BG";
+    }
+
+    physical_device = devices[highest_index];
+    queue_family = highest_qf;
+
+    lg(Info) << translator->translate("ok.selecting_gpu",
+        device_info[highest_index],
+        highest_score
+    ) << endlog;
 }
 
 void App::_vk_setup_debug_callback(){
@@ -199,7 +312,7 @@ void App::_vk_create_instance(){
                 
                 if(*it == VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME){
                     create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-                }else if(*it == "VK_EXT_debug_utils"){
+                }else if(*it == VK_EXT_DEBUG_UTILS_EXTENSION_NAME){
                     --enable_validation_layer_steps;
                 }
             }else{
