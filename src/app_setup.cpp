@@ -9,11 +9,15 @@ void App::setup(){
     _setup_logger();
     _setup_language();
     _setup_glfw();
+    _setup_vulkan();
 }
 
 void App::endup(){
+    // 处理Vulkan
+    if(instance)vkDestroyInstance(instance,allocator);
+
     // 处理GLFW相关
-    glfwDestroyWindow(window);
+    if(window)glfwDestroyWindow(window);
     glfwTerminate();
 }
 
@@ -55,10 +59,6 @@ void App::_setup_glfw(){
     }
 
     lg(Info) << translator->translate("ok.window",width,height,title) << endlog;
-
-    uint32_t extension_count = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr,&extension_count,nullptr);
-    lg << extension_count << " extensions are supported!" << endlog;
 }
 
 void App::_setup_language(){

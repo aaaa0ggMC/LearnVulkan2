@@ -4,6 +4,7 @@
 #include <alib5/adata.h>
 #include <alib5/atranslator.h>
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 
 struct App{
     /// 配置文件
@@ -20,23 +21,30 @@ struct App{
     /// 窗口
     GLFWwindow * window;
 
+    /// VK分配器
+    VkAllocationCallbacks * allocator { nullptr };
+
     App(alib5::AData & iconfig,alib5::LoggerConfig cfg0,alib5::LogFactoryConfig cfg1,std::pmr::memory_resource * __a = ALIB5_DEFAULT_MEMORY_RESOURCE)
     :config(iconfig)
     ,logger(cfg0)
     ,lg(logger,cfg1)
     ,full_translator(__a){}
 
-    ~App(){
-        endup();
-    }
+    ~App(){ endup(); }
 
     void setup();
     void _setup_logger();
     void _setup_language();
     void _setup_glfw();
+    void _setup_vulkan();
 
     int run();
     void endup();
+
+    /// Vulkan相关
+    VkInstance instance { nullptr };
+
+    void _vk_create_instance();
 };
 
 #endif

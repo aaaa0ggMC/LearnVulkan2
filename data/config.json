@@ -1,3 +1,8 @@
 {
-    "language" : "zh_cn"
+    "language" : "zh_cn",
+    "vulkan" : {
+        "extensions" : [
+            "VK_KHR_portability_enumeration"
+        ]
+    }
 }

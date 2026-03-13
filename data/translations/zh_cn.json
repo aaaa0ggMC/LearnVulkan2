@@ -4,10 +4,17 @@
     "test" : "翻译文件加载成功,目前为{}",
     "ok" : {
         "vulkan" : "GLFW支持Vulkan.",
-        "window" : "成功创建{0}x{1}的窗口\"{2}\"."
+        "window" : "成功创建{0}x{1}的窗口\"{2}\".",
+        "vk_instance" : "成功创建VkInstance,API版本:{0},启用扩展{1}."
     },
     "bad" : {
         "vulkan" : "GLFW不支持Vulkan!",
-        "window" : "创建{0}x{1}的标题为\"{2}\"的窗口失败,错误码{3},错误信息:\"{4}\"!"
+        "window" : "创建{0}x{1}的标题为\"{2}\"的窗口失败,错误码{3},错误信息:\"{4}\"!",
+        "vk_instance" : "创建VkInstance失败,错误码{0}!",
+        "ext_not_found" : "找不到下列({0}个)扩展:{1}"
+    },
+    "check" : {
+        "glfw_ext" : "GLFW支持{0}个扩展,为:",
+        "vk_instance_ext" : "VulkanInstance支持{0}个扩展,为:"
     }
 }

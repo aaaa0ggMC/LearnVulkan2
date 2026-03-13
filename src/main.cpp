@@ -1,6 +1,13 @@
 /**
- * 概念性项目,展示alib5的实力,同时尝试涉足Vulkan
-**/
+ * @file main.cpp
+ * @author aaaa0ggmc (lovelinux@yslwd.eu.org)
+ * @brief 概念性项目,展示alib5的实力,同时尝试涉足Vulkan
+ * @version 5.0
+ * @date 2026-03-13
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
 #include <app.h>
 #include <schema.h>
 
@@ -54,6 +61,9 @@ int main(){
         App app(config,logger_cfg,lg_cfg,res);
         app.setup();
         return app.run();
+    }catch(const std::exception & e){
+        std::cerr << e.what() << std::endl;
+        return -1;
     }catch(...){
         return -1;
     }
