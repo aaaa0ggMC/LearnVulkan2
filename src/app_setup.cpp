@@ -13,6 +13,15 @@ void App::setup(){
 }
 
 void App::endup(){
+    lg << translator->translate("cleanup") << endlog;
+    // 这个是vl
+    if(debug_messenger){
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,"vkDestroyDebugUtilsMessengerEXT");
+        if(func)func(instance, debug_messenger, allocator);
+        else{
+            lg(Error) << translator->translate("bad.destroy_debug_messenger") << endlog;
+        }
+    }
     // 处理Vulkan
     if(instance)vkDestroyInstance(instance,allocator);
 
@@ -26,7 +35,7 @@ void App::_setup_glfw(){
 
     // 检查vulkan支持
     if(glfwVulkanSupported()){
-        lg(Info) << translator->translate("ok.vulkan") << endlog;
+        lg << translator->translate("ok.vulkan") << endlog;
     }else{
         lg(Error) << translator->translate("bad.vulkan") << endlog;
         throw "Bad GUY!";
@@ -77,7 +86,7 @@ void App::_setup_language(){
         throw "BAD GUY!";
     }
     translator.emplace(*t);
-    lg << translator->translate<false>(
+    lg(Info) << translator->translate<false>(
         "test",
         translator->translate("title")
     ) << endlog;

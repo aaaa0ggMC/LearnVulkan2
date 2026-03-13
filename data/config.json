@@ -2,7 +2,11 @@
     "language" : "zh_cn",
     "vulkan" : {
         "extensions" : [
-            "VK_KHR_portability_enumeration"
+            "VK_KHR_portability_enumeration",
+            "VK_EXT_debug_utils"
+        ],
+        "layers" : [
+            "VK_LAYER_KHRONOS_validation"
         ]
     }
 }

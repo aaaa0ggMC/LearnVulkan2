@@ -5,16 +5,23 @@
     "ok" : {
         "vulkan" : "GLFW支持Vulkan.",
         "window" : "成功创建{0}x{1}的窗口\"{2}\".",
-        "vk_instance" : "成功创建VkInstance,API版本:{0},启用扩展{1}."
+        "vk_instance" : "成功创建VkInstance,API版本:{0},启用扩展{1},启用层级{2}.",
+        "create_debug_messenger" : "创建VkDebugMessenger成功."
     },
     "bad" : {
         "vulkan" : "GLFW不支持Vulkan!",
         "window" : "创建{0}x{1}的标题为\"{2}\"的窗口失败,错误码{3},错误信息:\"{4}\"!",
         "vk_instance" : "创建VkInstance失败,错误码{0}!",
-        "ext_not_found" : "找不到下列({0}个)扩展:{1}"
+        "ext_not_found" : "找不到下列({0}个)扩展:{1}",
+        "layer_not_found" : "找不到下列({0}个)层级:{1}",
+        "debug_messenger" : "找不到函数来初始化验证器,验证器已被禁用!",
+        "create_debug_messenger" : "创建VkDebugMessenger失败,错误码{0}!",
+        "destroy_debug_messenger" : "找不到函数来销毁验证器!"
     },
     "check" : {
         "glfw_ext" : "GLFW支持{0}个扩展,为:",
-        "vk_instance_ext" : "VulkanInstance支持{0}个扩展,为:"
-    }
+        "vk_instance_ext" : "VulkanInstance支持{0}个扩展,为:",
+        "vk_instance_layers" : "VulkanInstance支持{0}个层级,为:"
+    },
+    "cleanup" : "清理中......"
 }

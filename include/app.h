@@ -13,6 +13,7 @@ struct App{
     /// 日志
     alib5::Logger logger;
     alib5::LogFactory lg;
+    alib5::LogFactory vk_validation_lg;
 
     /// 语言类
     alib5::Translator full_translator;
@@ -28,6 +29,7 @@ struct App{
     :config(iconfig)
     ,logger(cfg0)
     ,lg(logger,cfg1)
+    ,vk_validation_lg(logger,"VulkanValidation")
     ,full_translator(__a){}
 
     ~App(){ endup(); }
@@ -43,8 +45,13 @@ struct App{
 
     /// Vulkan相关
     VkInstance instance { nullptr };
+    VkDebugUtilsMessengerEXT debug_messenger { nullptr };
+    int enable_validation_layer_steps { 2 };
+    bool allow_posts [5] {true};
+
 
     void _vk_create_instance();
+    void _vk_setup_debug_callback();
 };
 
 #endif
