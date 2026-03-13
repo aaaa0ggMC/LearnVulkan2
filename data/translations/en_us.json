@@ -1,0 +1,13 @@
+{
+    "id" : "en_us",
+    "title" : "English (US)",
+    "test" : "Translation file loaded successfully, current language is {}",
+    "ok" : {
+        "vulkan" : "GLFW supports Vulkan.",
+        "window" : "Successfully created {0}x{1} window \"{2}\"."
+    },
+    "bad" : {
+        "vulkan" : "GLFW does not support Vulkan!",
+        "window" : "Failed to create {0}x{1} window titled \"{2}\"! Error code {3}, message: \"{4}\"!"
+    }
+}
