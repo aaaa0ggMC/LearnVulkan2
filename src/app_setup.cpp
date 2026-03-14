@@ -14,24 +14,13 @@ void App::setup(){
 
 void App::endup(){
     lg << translator->translate("cleanup") << endlog;
-    // 这个是vl
-    if(debug_messenger){
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance,"vkDestroyDebugUtilsMessengerEXT");
-        if(func)func(instance, debug_messenger, allocator);
-        else{
-            lg(Error) << translator->translate("bad.destroy_debug_messenger") << endlog;
-        }
-    }
-    // 处理Vulkan
-    if(instance)vkDestroyInstance(instance,allocator);
-
-    // 处理GLFW相关
-    if(window)glfwDestroyWindow(window);
-    glfwTerminate();
 }
 
 void App::_setup_glfw(){
     glfwInit();
+    defer_mgr.defer([]{
+        glfwTerminate();
+    });
 
     // 检查vulkan支持
     if(glfwVulkanSupported()){
@@ -66,6 +55,9 @@ void App::_setup_glfw(){
         lg(Error) << translator->translate("bad.window",width,height,title,code,desc) << endlog;
         throw "Bad GUY!";
     }
+    defer_mgr.defer([this]{
+        glfwDestroyWindow(window);
+    });
 
     lg(Info) << translator->translate("ok.window",width,height,title) << endlog;
 }

@@ -8,13 +8,23 @@
 
 struct QueueFamilyIndices{
     std::optional<uint32_t> graphics;
+    std::optional<uint32_t> present;
 
     bool is_complete(){
-        return (bool)graphics;
+        return (bool)graphics && (bool)present;
     }
 };
 
+struct SwapChainSupportDetails{
+    VkSurfaceCapabilitiesKHR capabilities {};
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> present_modes;
+};
+
 struct App{
+    // 资源释放
+    alib5::misc::DeferManager defer_mgr;
+
     /// 配置文件
     alib5::AData & config;
 
@@ -54,9 +64,22 @@ struct App{
     /// Vulkan相关
     VkInstance instance { VK_NULL_HANDLE };
     VkDebugUtilsMessengerEXT debug_messenger { VK_NULL_HANDLE };
+    VkSurfaceKHR surface { VK_NULL_HANDLE };
     VkPhysicalDevice physical_device { VK_NULL_HANDLE };
-    QueueFamilyIndices queue_family;
+    QueueFamilyIndices queue_family {};
+    VkPhysicalDeviceProperties device_properties {};
+    VkPhysicalDeviceFeatures device_features {};
+    VkDevice device { VK_NULL_HANDLE };
+    VkQueue graphics_queue { VK_NULL_HANDLE };
+    VkQueue present_queue { VK_NULL_HANDLE };
+    SwapChainSupportDetails swap_chain_details {};
+    VkSurfaceFormatKHR surface_format {};
+    VkPresentModeKHR present_mode {};
+    VkExtent2D swap_extent {};
+    VkSwapchainKHR swapchain;
 
+    /// 指向不会变的adata
+    std::vector<const char *> valid_device_extensions;
     int enable_validation_layer_steps { 2 };
     bool allow_posts [5] {true};
 
@@ -64,6 +87,12 @@ struct App{
     void _vk_create_instance();
     void _vk_setup_debug_callback();
     void _vk_pick_physical_device();
+    void _vk_create_logical_device();
+    void _vk_create_window_surface();
+    void _vk_choose_swap_surface_format();
+    void _vk_choose_present_mode();
+    void _vk_choose_swap_extent();
+    void _vk_create_swap_chain();
 };
 
 #endif

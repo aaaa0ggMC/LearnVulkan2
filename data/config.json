@@ -1,12 +1,16 @@
 {
     "language" : "zh_cn",
     "vulkan" : {
-        "extensions" : [
+        "instance_extensions" : [
             "VK_KHR_portability_enumeration",
             "VK_EXT_debug_utils"
         ],
+        "device_extensions":[
+            "VK_KHR_swapchain"
+        ],
         "layers" : [
             "VK_LAYER_KHRONOS_validation"
-        ]
+        ],
+        "verbose_extensions" : false
     }
 }

@@ -38,7 +38,8 @@ inline std::string_view str_schema = R"({
             ["OPTIONAL TYPE INT MIN 0 MAX 4095", 0 , "Patch Version"]
         ],
         "engine_name" : ["OPTIONAL TYPE STRING","No Engine"],
-        "extensions" : ["OPTIONAL TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
+        "instance_extensions" : ["OPTIONAL TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
+        "device_extensions" : ["OPTIONAL TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
         "layers" : ["OPTIONAL TYPE ARRAY MIN 0","REQUIRED TYPE STRING"],
         "debug_allow" : {
             "verbose" : ["OPTIONAL TYPE BOOL" , true],
@@ -54,6 +55,7 @@ inline std::string_view str_schema = R"({
             "need_geometry" : ["TYPE BOOL" , true],
             "fail_load" : ["TYPE BOOL" , false]
         },
+        "verbose_extensions" : ["TYPE BOOL" , false]
     }
 })";
 #endif

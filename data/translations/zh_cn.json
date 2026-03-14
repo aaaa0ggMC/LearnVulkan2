@@ -7,7 +7,13 @@
         "window" : "成功创建{0}x{1}的窗口\"{2}\".",
         "vk_instance" : "成功创建VkInstance,API版本:{0},启用扩展{1},启用层级{2}.",
         "create_debug_messenger" : "创建VkDebugMessenger成功.",
-        "selecting_gpu" : "选择GPU\"{}\",得分:{:.2f}."
+        "selecting_gpu" : "选择GPU\"{}\",得分:{:.2f}.",
+        "vk_device" : "成功创建VkDevice,启用扩展{0}.",
+        "create_surface" : "成功创建VkSurface.",
+        "select_format" : "选择颜色格式{0},颜色空间{1}.",
+        "select_present" : "选择呈现模式{0}.",
+        "select_extent" : "设置交换区大小{0}x{1}.",
+        "create_swapchain" : "创建VkSwapchain成功."
     },
     "bad" : {
         "vulkan" : "GLFW不支持Vulkan!",
@@ -19,14 +25,20 @@
         "create_debug_messenger" : "创建VkDebugMessenger失败,错误码{0}!",
         "destroy_debug_messenger" : "找不到函数来销毁验证器!",
         "no_phy_dev" : "找不到任何一个物理显卡设备!",
-        "no_gpu_satisfiable" : "没有任何GPU满足程序需求!"
+        "no_gpu_satisfiable" : "没有任何GPU满足程序需求!也许是请求的扩展有误,请求的扩展:{0}.",
+        "vk_device" : "创建VkDevice失败,错误码{0}!",
+        "create_surface" : "创建VkSurface失败,错误码{0}!",
+        "create_swapchain" : "创建VkSwapchain失败,错误码{0}!"
     },
     "check" : {
         "glfw_ext" : "GLFW支持{0}个扩展,为:",
         "vk_instance_ext" : "VulkanInstance支持{0}个扩展,为:",
         "vk_instance_layers" : "VulkanInstance支持{0}个层级,为:",
         "physical_device" : "找到{0}个物理设备,为:",
-        "gpu_score" : "GPU\"{}\"得分为{:.2f}."
+        "gpu_score" : "GPU\"{}\"得分为{:.2f}.",
+        "gpu_score_with_exts" : "GPU\"{}\"得分为{:.2f},支持{}个扩展:",
+        "vk_device_ext" : "对应显卡设备支持{0}个扩展.",
+        "begin_scoring" : "开始打分:\n-1分:要求几何着色器但不支持\n-2分:配置中固定设置\n-3分:显卡的图形族以及呈现族不是同时完备的\n-4分:用户给出的扩展需求不支持\n-5分:SwapChain支持不完备"
     },
     "cleanup" : "清理中......"
 }
