@@ -5,6 +5,472 @@
 using namespace alib5;
 using enum Severity;
 
+void App::_setup_vulkan(){
+    /// 初始化instance
+    _vk_create_instance();
+    /// 初始化VulkanCallback
+    if(!enable_validation_layer_steps)_vk_setup_debug_callback();
+    /// 创建surface对象
+    _vk_create_window_surface();
+
+    /// 选择物理设备
+    _vk_pick_physical_device();
+    /// 选择逻辑设备
+    _vk_create_logical_device();
+
+    /// 选择swap surface的format
+    _vk_choose_swap_surface_format();
+    ///  选择呈现模式
+    _vk_choose_present_mode();
+    /// 选择交换空间范围
+    _vk_choose_swap_extent();
+    /// 创建交换链
+    _vk_create_swap_chain();
+    // 创建image views
+    _vk_create_image_views();
+
+    /// 创建pipeline
+    // renderpass
+    _vk_create_render_pass();
+    // pipeline
+    _vk_create_graphics_pipeline();
+    // 我是抖M吗?...累死了
+    // framebuffer
+    _vk_create_framebuffers();
+
+    // cmd pool
+    _vk_create_command_pool();
+    // cmd buffer
+    _vk_create_command_buffer();
+    // sync
+    _vk_create_sync_objects();
+}
+
+void App::_vk_create_sync_objects(){
+    VkSemaphoreCreateInfo semaphore_ci {};
+    semaphore_ci.sType = VST(SEMAPHORE_CREATE_INFO);
+    
+    VkFenceCreateInfo fence_ci {};
+    fence_ci.sType = VST(FENCE_CREATE_INFO);
+    fence_ci.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    auto create_semaphore = [&,this](std::string_view desc,VkSemaphore & s){
+        if(VkResult result = vkCreateSemaphore(device,&semaphore_ci,allocator,&s)){
+            lg(Error,*translator,"bad.create_semaphore",desc,(int)result) << endlog;
+            throw "BG";
+        }
+        defer_mgr.defer([this,s]{
+            vkDestroySemaphore(device,s,allocator);
+        });
+    };
+
+    auto create_fence = [&,this](std::string_view desc,VkFence & s){
+        if(VkResult result = vkCreateFence(device,&fence_ci,allocator,&s)){
+            lg(Error,*translator,"bad.create_fence",desc,(int)result) << endlog;
+            throw "BG";
+        }
+        defer_mgr.defer([this,s]{
+            vkDestroyFence(device,s,allocator);
+        });
+    };
+
+    create_semaphore("image_available", sem_img_available);
+    create_semaphore("render_finished", sem_render_fin);
+    create_fence("in_flight", fen_in_flight);
+
+    lg(Info,*translator,"ok.sync") << endlog;
+}
+
+void App::vk_record_command_buffer(VkCommandBuffer buffer,uint32_t image_index){
+    VkCommandBufferBeginInfo beg_info {};
+    beg_info.sType = VST(COMMAND_BUFFER_BEGIN_INFO);
+    beg_info.flags = 0;
+    beg_info.pInheritanceInfo = nullptr;
+
+    if(VkResult result = vkBeginCommandBuffer(buffer, &beg_info)){
+        lg(Error,*translator,"bad.begin_cmd_buffer",(int)result) << endlog;
+        throw "BG";
+    }
+
+    VkRenderPassBeginInfo render_bi {};
+    render_bi.sType = VST(RENDER_PASS_BEGIN_INFO);
+    render_bi.renderPass = render_pass;
+    render_bi.framebuffer = framebuffers[image_index];
+    render_bi.renderArea.offset = {0,0};
+    render_bi.renderArea.extent = swap_extent;
+
+    VkClearValue clear_color = {{{0.f,0.f,0.f,1.f}}};
+    render_bi.clearValueCount = 1;
+    render_bi.pClearValues = &clear_color;
+    
+    vkCmdBeginRenderPass(cmd_buffer,&render_bi, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(cmd_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,graphics_pipeline);
+
+    VkViewport viewport {};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)(swap_extent.width);
+    viewport.height = (float)(swap_extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmd_buffer, 0, 1, &viewport);
+
+    VkRect2D scissor {};
+    scissor.offset = {0,0};
+    scissor.extent = swap_extent;
+
+    vkCmdSetScissor(cmd_buffer, 0, 1, &scissor);
+
+    vkCmdDraw(cmd_buffer,3,1,0,0);
+    vkCmdEndRenderPass(cmd_buffer);
+    if(VkResult result = vkEndCommandBuffer(cmd_buffer)){
+        lg(Error,*translator,"bad.end_cmd_buffer",(int)result) << endlog;
+    }
+}
+
+void App::_vk_create_command_buffer(){
+    VkCommandBufferAllocateInfo allocate_ci {};
+    allocate_ci.sType = VST(COMMAND_BUFFER_ALLOCATE_INFO);
+    allocate_ci.commandBufferCount = 1;
+    allocate_ci.commandPool = cmd_pool;
+    allocate_ci.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    if(VkResult result = vkAllocateCommandBuffers(device,&allocate_ci, &cmd_buffer)){
+        lg(Error,*translator,"bad.allocate_cmd_buffer",(int)result) << endlog;
+        throw "BG";
+    }
+
+    lg(Info,*translator,"ok.create_cmd_buffer") << endlog;
+}
+
+void App::_vk_create_command_pool(){
+    VkCommandPoolCreateInfo pool_ci {};
+    pool_ci.sType = VST(COMMAND_POOL_CREATE_INFO);
+    pool_ci.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    pool_ci.queueFamilyIndex = *queue_family.graphics;
+
+    if(VkResult result = vkCreateCommandPool(device,&pool_ci,allocator,&cmd_pool)){
+        lg(Error,*translator,"bad.create_cmd_pool",(int)result) << endlog;
+        throw "BG";
+    }
+    defer_mgr.defer([this]{
+        vkDestroyCommandPool(device,cmd_pool,allocator);
+    });
+
+    lg(Info,*translator,"ok.create_cmd_pool") << endlog;
+}
+
+
+void App::_vk_create_framebuffers(){
+    framebuffers.resize(swapchain_views.size(),VK_NULL_HANDLE);
+    for(size_t i = 0;i <framebuffers.size();++i){
+        VkImageView attachments[] = {
+            swapchain_views[i]
+        };
+
+        VkFramebufferCreateInfo create_info {};
+        create_info.sType = VST(FRAMEBUFFER_CREATE_INFO);
+        create_info.renderPass = render_pass;
+        create_info.attachmentCount = 1;
+        create_info.pAttachments = attachments;
+        create_info.width = swap_extent.width;
+        create_info.height = swap_extent.height;
+        create_info.layers = 1;
+
+        if(VkResult result = vkCreateFramebuffer(device,&create_info,allocator,&framebuffers[i])){
+            lg(Error,*translator,"bad.create_framebuffer",(int)result) << endlog;
+            throw "BG";
+        }
+        defer_mgr.defer([this,i]{
+            vkDestroyFramebuffer(device,framebuffers[i],allocator);
+        });
+    }
+    
+    lg(Info,*translator,"ok.create_framebuffer",framebuffers.size()) << endlog;
+}
+
+void App::_vk_create_render_pass(){
+    VkAttachmentDescription color_attachment {};
+    color_attachment.format = surface_format.format;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference color_ref {};
+    color_ref.attachment = 0;
+    color_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass {};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_ref;
+
+    VkRenderPassCreateInfo render_pass_ci {};
+    render_pass_ci.sType = VST(RENDER_PASS_CREATE_INFO);
+    render_pass_ci.attachmentCount = 1;
+    render_pass_ci.pAttachments = &color_attachment;
+    render_pass_ci.subpassCount = 1;
+    render_pass_ci.pSubpasses = &subpass;
+
+    if(VkResult result = vkCreateRenderPass(device,&render_pass_ci,allocator,&render_pass)){
+        lg(Error,*translator,"bad.create_render_pass",(int)result) << endlog;
+        throw "BG";
+    }
+    defer_mgr.defer([this]{
+        vkDestroyRenderPass(device,render_pass,allocator);
+    });
+
+    lg(Info,*translator,"ok.create_render_pass") << endlog;
+}
+
+void App::_vk_create_graphics_pipeline(){
+    std::string vertex_shader,fragment_shader;
+    std::string vertex_shader_raw,fragment_shader_raw;
+    uint32_t detail_count = config.jump("/vulkan/shader_detail_count").to<uint32_t>();
+
+    auto read = [this](std::string_view cfg,std::string_view type,std::string & o){
+        std::string_view path = config.jump(cfg).to<std::string_view>();
+        if(io::read_all(path,o) == std::variant_npos){
+            lg(Error,*translator,"bad.read_shader",
+                translator->translate(type),
+                path
+            ) << endlog;
+            throw "BG";
+        }
+    };
+
+    read("/vulkan/shaders/0/vert","shader_type.vert",vertex_shader);
+    read("/vulkan/shaders/0/vert_raw","shader_type.vert_raw",vertex_shader_raw);
+    read("/vulkan/shaders/0/frag","shader_type.frag",fragment_shader);
+    read("/vulkan/shaders/0/frag_raw","shader_type.frag_raw",fragment_shader_raw);
+
+    lg(Info,*translator,"ok.read_shader") << 
+    "\nVertex  :\n" << LOG_COLOR1(Blue) << log_omit(vertex_shader_raw,detail_count) << LOG_COLOR1(None) << 
+    "\nFragment:\n" << LOG_COLOR1(Blue) << log_omit(fragment_shader_raw,detail_count) << LOG_COLOR1(None) <<
+    endlog;
+
+    // 创建着色器模块
+    auto create_shader_module = [this](std::string_view type,std::span<char> code,VkShaderModule& mod){
+        VkShaderModuleCreateInfo create_info {};
+
+        create_info.sType = VST(SHADER_MODULE_CREATE_INFO);
+        create_info.codeSize = code.size();
+        create_info.pCode = (const uint32_t*)code.data();
+
+        if(VkResult result = vkCreateShaderModule(
+                device, 
+                &create_info, 
+                allocator,
+                &mod
+        )){
+
+            lg(Error,*translator,"bad.create_shader_module",
+                translator->translate(type),
+                (int)result
+            ) << endlog;
+            throw "BG";
+        }
+    };
+
+    misc::DeferManager module_defer;
+    VkShaderModule vert_module {VK_NULL_HANDLE};
+    VkShaderModule frag_module {VK_NULL_HANDLE};
+
+    create_shader_module("shader_type.vert",vertex_shader,vert_module);
+    module_defer.defer([this,vert_module]{
+        vkDestroyShaderModule(device,vert_module,allocator);
+    });
+    create_shader_module("shader_type.frag",fragment_shader,frag_module);
+    module_defer.defer([this,frag_module]{
+        vkDestroyShaderModule(device,frag_module,allocator);
+    });
+
+    VkPipelineShaderStageCreateInfo vert_create_info {};
+    vert_create_info.sType = VST(PIPELINE_SHADER_STAGE_CREATE_INFO);
+    vert_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vert_create_info.module = vert_module;
+    // 暂时硬编码,因为也只用到了一个shader其实
+    vert_create_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo frag_create_info {};
+    frag_create_info.sType = VST(PIPELINE_SHADER_STAGE_CREATE_INFO);
+    frag_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag_create_info.module = frag_module;
+    // 暂时硬编码,因为也只用到了一个shader其实
+    frag_create_info.pName = "main";
+
+    VkPipelineShaderStageCreateInfo stages[] = {vert_create_info,frag_create_info};
+
+    std::vector<VkDynamicState> dynamic_states = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamic_state_ci {};
+    dynamic_state_ci.sType = VST(PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+    dynamic_state_ci.dynamicStateCount = dynamic_states.size();
+    dynamic_state_ci.pDynamicStates = dynamic_states.data();
+
+    VkPipelineVertexInputStateCreateInfo vertex_in_ci {};
+    vertex_in_ci.sType = VST(PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+    vertex_in_ci.vertexBindingDescriptionCount = 0;
+    vertex_in_ci.pVertexBindingDescriptions = nullptr;    
+    vertex_in_ci.vertexAttributeDescriptionCount = 0;
+    vertex_in_ci.pVertexAttributeDescriptions = nullptr;
+
+    VkPipelineInputAssemblyStateCreateInfo assemby_ci {};
+    assemby_ci.sType = VST(PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
+    assemby_ci.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    assemby_ci.primitiveRestartEnable = VK_FALSE;
+    
+    VkViewport viewport {};
+    viewport.x = 0.f;
+    viewport.y = 0.f;
+    viewport.width = (float)swap_extent.width;
+    viewport.height = (float)swap_extent.height;
+    viewport.minDepth = 0.f;
+    viewport.maxDepth = 1.f;
+
+    VkRect2D scissor {};
+    scissor.offset = {0,0};
+    scissor.extent = swap_extent;
+
+    VkPipelineViewportStateCreateInfo viewport_ci {};
+    viewport_ci.sType = VST(PIPELINE_VIEWPORT_STATE_CREATE_INFO);
+    viewport_ci.viewportCount = 1;
+    viewport_ci.pViewports = &viewport;
+    viewport_ci.scissorCount = 1;
+    viewport_ci.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo raster_ci {};
+    raster_ci.sType = VST(PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
+    raster_ci.depthClampEnable = VK_FALSE;
+    raster_ci.rasterizerDiscardEnable = VK_FALSE;
+    raster_ci.polygonMode = VK_POLYGON_MODE_FILL;
+    raster_ci.lineWidth = 1.0f;
+    raster_ci.cullMode = VK_CULL_MODE_BACK_BIT;
+    raster_ci.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    raster_ci.depthBiasEnable = VK_FALSE;
+    raster_ci.depthBiasClamp = 0.f;
+    raster_ci.depthBiasConstantFactor = 0.f;
+    raster_ci.depthBiasSlopeFactor = 0.f;
+
+    VkPipelineMultisampleStateCreateInfo multi_sample_ci {};
+    multi_sample_ci.sType = VST(PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
+    multi_sample_ci.sampleShadingEnable = VK_FALSE;
+    multi_sample_ci.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multi_sample_ci.minSampleShading = 1.0f;
+    multi_sample_ci.pSampleMask = nullptr;
+    multi_sample_ci.alphaToCoverageEnable = VK_FALSE;
+    multi_sample_ci.alphaToOneEnable = VK_FALSE;
+
+    VkPipelineColorBlendAttachmentState color_blend {};
+    color_blend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    color_blend.blendEnable = VK_TRUE;
+    color_blend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend.colorBlendOp = VK_BLEND_OP_ADD;
+    color_blend.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend.alphaBlendOp = VK_BLEND_OP_ADD;
+
+    VkPipelineColorBlendStateCreateInfo blend_state_ci {};
+    blend_state_ci.sType = VST(PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
+    blend_state_ci.logicOpEnable = VK_FALSE;
+    blend_state_ci.logicOp = VK_LOGIC_OP_COPY;
+    blend_state_ci.attachmentCount = 1;
+    blend_state_ci.pAttachments = &color_blend;
+    blend_state_ci.blendConstants[0] = 0;
+    blend_state_ci.blendConstants[1] = 0;
+    blend_state_ci.blendConstants[2] = 0;
+    blend_state_ci.blendConstants[3] = 0;
+
+    VkPipelineLayoutCreateInfo pipeline_layout_ci {};
+    pipeline_layout_ci.sType = VST(PIPELINE_LAYOUT_CREATE_INFO);
+    pipeline_layout_ci.setLayoutCount = 0;
+    pipeline_layout_ci.pSetLayouts = nullptr;
+    pipeline_layout_ci.pushConstantRangeCount = 0;
+    pipeline_layout_ci.pPushConstantRanges = nullptr;
+
+    if(VkResult result = vkCreatePipelineLayout(device,&pipeline_layout_ci, allocator, &pipeline_layout)){
+        lg(Error,*translator,"bad.create_pipeline_layout",(int)result) << endlog;
+        throw "BG";
+    }
+    defer_mgr.defer([this]{
+        vkDestroyPipelineLayout(device,pipeline_layout,allocator);
+    });
+
+    VkGraphicsPipelineCreateInfo graphics_ci {};
+    graphics_ci.sType = VST(GRAPHICS_PIPELINE_CREATE_INFO);
+    graphics_ci.stageCount = 2;
+    graphics_ci.pStages = stages;
+    graphics_ci.pVertexInputState = &vertex_in_ci;
+    graphics_ci.pInputAssemblyState = &assemby_ci;
+    graphics_ci.pViewportState = &viewport_ci;
+    graphics_ci.pRasterizationState = &raster_ci;
+    graphics_ci.pMultisampleState = &multi_sample_ci;
+    graphics_ci.pDepthStencilState = nullptr;
+    graphics_ci.pColorBlendState = &blend_state_ci;
+    graphics_ci.pDynamicState = &dynamic_state_ci;
+
+    graphics_ci.layout = pipeline_layout;
+    graphics_ci.renderPass = render_pass;
+    graphics_ci.subpass = 0;
+    graphics_ci.basePipelineHandle = VK_NULL_HANDLE;
+    graphics_ci.basePipelineIndex = -1;
+
+    if(VkResult result = vkCreateGraphicsPipelines(device,VK_NULL_HANDLE,1,&graphics_ci,allocator,&graphics_pipeline)){
+        lg(Error,*translator,"bad.create_pipeline",(int)result) << endlog;
+        throw "BG";
+    }
+    defer_mgr.defer([this]{
+        vkDestroyPipeline(device,graphics_pipeline,allocator);
+    });
+
+    lg(Info,*translator,"ok.create_pipeline") << endlog;
+}
+
+void App::_vk_create_image_views(){
+    swapchain_views.resize(swapchain_images.size(),VK_NULL_HANDLE);
+    for(size_t i = 0;i < swapchain_views.size();++i){
+        VkImageViewCreateInfo create_info {};
+        create_info.sType = VST(IMAGE_VIEW_CREATE_INFO);
+        create_info.image = swapchain_images[i];
+        create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        create_info.format = surface_format.format;
+        create_info.components = {
+            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+        };
+        create_info.subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        };
+
+        if(VkResult result = vkCreateImageView(device,&create_info,allocator, &swapchain_views[i])){
+            lg(Error,*translator,"bad.create_view",i,(int)result) << endlog;
+            throw "BG";     
+        }
+        // 成功创建,针对每一个注册销毁函数
+        defer_mgr.defer([this,i]{
+            vkDestroyImageView(device, swapchain_views[i], allocator);
+        });
+    }
+
+    lg(Info,*translator,"ok.create_view",swapchain_views.size()) << endlog;
+}
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_call_back(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -51,29 +517,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_call_back(
     return VK_FALSE;
 }
 
-void App::_setup_vulkan(){
-    /// 初始化instance
-    _vk_create_instance();
-    /// 初始化VulkanCallback
-    if(!enable_validation_layer_steps)_vk_setup_debug_callback();
-    /// 创建surface对象
-    _vk_create_window_surface();
-
-    /// 选择物理设备
-    _vk_pick_physical_device();
-    /// 选择逻辑设备
-    _vk_create_logical_device();
-
-    /// 选择swap surface的format
-    _vk_choose_swap_surface_format();
-    ///  选择呈现模式
-    _vk_choose_present_mode();
-    /// 选择交换空间范围
-    _vk_choose_swap_extent();
-    /// 创建交换链
-    _vk_create_swap_chain();
-}
-
 void App::_vk_create_swap_chain(){
     auto & cap = swap_chain_details.capabilities;
     uint32_t image_count = cap.minImageCount + 1;
@@ -114,7 +557,12 @@ void App::_vk_create_swap_chain(){
         vkDestroySwapchainKHR(device,swapchain,allocator);
     });
 
-    lg(Info,*translator,"ok.create_swapchain") << endlog;
+    uint32_t swapchain_images_count = 0;
+    vkGetSwapchainImagesKHR(device,swapchain,&swapchain_images_count,nullptr);
+    swapchain_images.resize(swapchain_images_count);
+    vkGetSwapchainImagesKHR(device,swapchain,&swapchain_images_count,swapchain_images.data());
+
+    lg(Info,*translator,"ok.create_swapchain",swapchain_images_count) << endlog;
 }
 
 void App::_vk_choose_swap_extent(){

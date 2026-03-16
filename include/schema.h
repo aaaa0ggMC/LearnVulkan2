@@ -55,7 +55,15 @@ inline std::string_view str_schema = R"({
             "need_geometry" : ["TYPE BOOL" , true],
             "fail_load" : ["TYPE BOOL" , false]
         },
-        "verbose_extensions" : ["TYPE BOOL" , false]
+        "verbose_extensions" : ["TYPE BOOL" , false],
+        "shaders" : ["TYPE ARRAY MIN 1",{
+            "vert" : "TYPE STRING",
+            "vert_raw" : "TYPE STRING",
+
+            "frag" : ["TYPE STRING",""],
+            "frag_raw" : ["TYPE STRING",""]
+        }],
+        "shader_detail_count" : ["TYPE INT MIN 0" , 128]
     }
 })";
 #endif

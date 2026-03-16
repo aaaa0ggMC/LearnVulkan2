@@ -22,16 +22,13 @@ struct SwapChainSupportDetails{
 };
 
 struct App{
-    // 资源释放
-    alib5::misc::DeferManager defer_mgr;
-
-    /// 配置文件
-    alib5::AData & config;
-
     /// 日志
     alib5::Logger logger;
     alib5::LogFactory lg;
     alib5::LogFactory vk_validation_lg;
+
+    /// 配置文件
+    alib5::AData & config;
 
     /// 语言类
     alib5::Translator full_translator;
@@ -60,6 +57,7 @@ struct App{
 
     int run();
     void endup();
+    void draw();
 
     /// Vulkan相关
     VkInstance instance { VK_NULL_HANDLE };
@@ -76,7 +74,18 @@ struct App{
     VkSurfaceFormatKHR surface_format {};
     VkPresentModeKHR present_mode {};
     VkExtent2D swap_extent {};
-    VkSwapchainKHR swapchain;
+    VkSwapchainKHR swapchain { VK_NULL_HANDLE };
+    std::vector<VkImage> swapchain_images;
+    std::vector<VkImageView> swapchain_views; 
+    VkRenderPass render_pass { VK_NULL_HANDLE };
+    VkPipelineLayout pipeline_layout { VK_NULL_HANDLE };
+    VkPipeline graphics_pipeline { VK_NULL_HANDLE };
+    std::vector<VkFramebuffer> framebuffers;
+    VkCommandPool cmd_pool { VK_NULL_HANDLE };
+    VkCommandBuffer cmd_buffer { VK_NULL_HANDLE };
+    VkSemaphore sem_img_available { VK_NULL_HANDLE };
+    VkSemaphore sem_render_fin { VK_NULL_HANDLE };
+    VkFence fen_in_flight { VK_NULL_HANDLE };
 
     /// 指向不会变的adata
     std::vector<const char *> valid_device_extensions;
@@ -93,6 +102,18 @@ struct App{
     void _vk_choose_present_mode();
     void _vk_choose_swap_extent();
     void _vk_create_swap_chain();
+    void _vk_create_image_views();
+    void _vk_create_graphics_pipeline();
+    void _vk_create_render_pass();
+    void _vk_create_framebuffers();
+    void _vk_create_command_pool();
+    void _vk_create_command_buffer();
+    void _vk_create_sync_objects();
+
+    void vk_record_command_buffer(VkCommandBuffer buffer,uint32_t image_index);
+
+    // 资源释放,要做到最晚定义这样才能最早析构
+    alib5::misc::DeferManager defer_mgr;
 };
 
 #endif

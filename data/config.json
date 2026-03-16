@@ -11,6 +11,14 @@
         "layers" : [
             "VK_LAYER_KHRONOS_validation"
         ],
-        "verbose_extensions" : false
+        "verbose_extensions" : false,
+        "shaders":[
+            {
+                "vert" : "data/shaders/main-vert.spv",
+                "frag" : "data/shaders/main-frag.spv",
+                "vert_raw" : "data/shaders/main.vert",
+                "frag_raw" : "data/shaders/main.frag"
+            }
+        ]
     }
 }

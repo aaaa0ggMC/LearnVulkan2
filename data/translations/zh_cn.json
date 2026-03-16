@@ -13,7 +13,21 @@
         "select_format" : "选择颜色格式{0},颜色空间{1}.",
         "select_present" : "选择呈现模式{0}.",
         "select_extent" : "设置交换区大小{0}x{1}.",
-        "create_swapchain" : "创建VkSwapchain成功."
+        "create_swapchain" : "创建VkSwapchain成功,有{}个VkImage.",
+        "create_view" : "成功创建{}个VkImageView.",
+        "read_shader" : "读取spv着色器成功,下面是GLSL代码(你需要自己保证spv最新):",
+        "create_render_pass" : "成功创建RenderPass.",
+        "create_pipeline" : "成功创建Pipeline.",
+        "create_framebuffer" : "成功创建{}个Framebuffer.",
+        "create_cmd_pool" : "成功创建CommandPool.",
+        "create_cmd_buffer" : "成功创建CommandBuffer.",
+        "sync" : "成功创建所有同步对象."
+    },
+    "shader_type":{
+        "vert" : "顶点着色器(SPV)",
+        "frag" : "片段着色器(SPV)",
+        "vert_raw" : "顶点着色器(GLSL)",
+        "frag_raw" : "片段着色器(GLSL)"
     },
     "bad" : {
         "vulkan" : "GLFW不支持Vulkan!",
@@ -28,7 +42,20 @@
         "no_gpu_satisfiable" : "没有任何GPU满足程序需求!也许是请求的扩展有误,请求的扩展:{0}.",
         "vk_device" : "创建VkDevice失败,错误码{0}!",
         "create_surface" : "创建VkSurface失败,错误码{0}!",
-        "create_swapchain" : "创建VkSwapchain失败,错误码{0}!"
+        "create_swapchain" : "创建VkSwapchain失败,错误码{0}!",
+        "create_view" : "在创建index为{0}的ImageView时失败,错误码{1}!",
+        "read_shader" : "读取{0}时失败!路径:\"{1}\"",
+        "create_shader_module" : "创建{0}时失败,错误码{1}!",
+        "create_pipeline_layout" : "创建VkPipelineLayout时失败,错误码{0}!",
+        "create_render_pass" : "创建VkRenderPass时失败,错误码{0}!",
+        "create_pipeline" : "创建Pipeline时失败,错误码{0}!",
+        "create_framebuffer" : "创建Framebuffer时失败,错误码{0}!",
+        "create_cmd_pool" : "创建VkCommandPool时失败,错误码{0}!",
+        "allocate_cmd_buffer" : "创建VkCommanBuffer时失败,错误码{0}!",
+        "begin_cmd_buffer" : "开启CommanBuffer失败,错误码{0}!",
+        "end_cmd_buffer" : "关闭CommanBuffer失败,错误码{0}!",
+        "create_semaphore" : "创建信号量\"{0}\"时失败,错误码{1}!",
+        "create_fence" : "创建栅栏\"{0}\"时失败,错误码{1}!"
     },
     "check" : {
         "glfw_ext" : "GLFW支持{0}个扩展,为:",
