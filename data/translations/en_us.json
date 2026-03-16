@@ -1,13 +1,73 @@
 {
     "id" : "en_us",
-    "title" : "English (US)",
-    "test" : "Translation file loaded successfully, current language is {}",
+    "title" : "English",
+    "test" : "Translation file loaded successfully, current language: {}",
     "ok" : {
         "vulkan" : "GLFW supports Vulkan.",
-        "window" : "Successfully created {0}x{1} window \"{2}\"."
+        "window" : "Successfully created {0}x{1} window \"{2}\".",
+        "vk_instance" : "Successfully created VkInstance, API: {0}, enabled extensions: {1}, enabled layers: {2}.",
+        "create_debug_messenger" : "Successfully created VkDebugMessenger.",
+        "selecting_gpu" : "Selected GPU \"{}\", score: {:.2f}.",
+        "vk_device" : "Successfully created VkDevice, enabled extensions: {0}.",
+        "create_surface" : "Successfully created VkSurface.",
+        "select_format" : "Selected surface format {0}, color space {1}.",
+        "select_present" : "Selected present mode {0}.",
+        "select_extent" : "Set swapchain extent to {0}x{1}.",
+        "create_swapchain" : "Successfully created VkSwapchain with {} VkImages.",
+        "create_view" : "Successfully created {} VkImageViews.",
+        "read_shader" : "Successfully read SPV shader. GLSL source below (ensure SPV is up to date):",
+        "create_render_pass" : "Successfully created RenderPass.",
+        "create_pipeline" : "Successfully created Pipeline.",
+        "create_framebuffer" : "Successfully created {} Framebuffers.",
+        "create_cmd_pool" : "Successfully created CommandPool.",
+        "create_cmd_buffer" : "Successfully created CommandBuffer.",
+        "sync" : "Successfully created all synchronization objects, total {} sets."
+    },
+    "shader_type":{
+        "vert" : "Vertex Shader (SPV)",
+        "frag" : "Fragment Shader (SPV)",
+        "vert_raw" : "Vertex Shader (GLSL)",
+        "frag_raw" : "Fragment Shader (GLSL)"
     },
     "bad" : {
         "vulkan" : "GLFW does not support Vulkan!",
-        "window" : "Failed to create {0}x{1} window titled \"{2}\"! Error code {3}, message: \"{4}\"!"
-    }
+        "window" : "Failed to create {0}x{1} window titled \"{2}\". Error code: {3}, message: \"{4}\"!",
+        "vk_instance" : "Failed to create VkInstance. Error code: {0}!",
+        "ext_not_found" : "Could not find the following ({0}) extensions: {1}",
+        "layer_not_found" : "Could not find the following ({0}) layers: {1}",
+        "debug_messenger" : "Could not find function to initialize debug messenger. Validation disabled!",
+        "create_debug_messenger" : "Failed to create VkDebugMessenger. Error code: {0}!",
+        "destroy_debug_messenger" : "Could not find function to destroy debug messenger!",
+        "no_phy_dev" : "Could not find any physical device (GPU)!",
+        "no_gpu_satisfiable" : "No GPU meets the application requirements! Check requested extensions: {0}.",
+        "vk_device" : "Failed to create VkDevice. Error code: {0}!",
+        "create_surface" : "Failed to create VkSurface. Error code: {0}!",
+        "create_swapchain" : "Failed to create VkSwapchain. Error code: {0}!",
+        "create_view" : "Failed to create ImageView at index {0}. Error code: {1}!",
+        "read_shader" : "Failed to read {0}! Path: \"{1}\"",
+        "create_shader_module" : "Failed to create {0} shader module. Error code: {1}!",
+        "create_pipeline_layout" : "Failed to create VkPipelineLayout. Error code: {0}!",
+        "create_render_pass" : "Failed to create VkRenderPass. Error code: {0}!",
+        "create_pipeline" : "Failed to create Pipeline. Error code: {0}!",
+        "create_framebuffer" : "Failed to create Framebuffer. Error code: {0}!",
+        "create_cmd_pool" : "Failed to create VkCommandPool. Error code: {0}!",
+        "allocate_cmd_buffer" : "Failed to allocate VkCommandBuffer. Error code: {0}!",
+        "begin_cmd_buffer" : "Failed to begin CommandBuffer. Error code: {0}!",
+        "end_cmd_buffer" : "Failed to end CommandBuffer. Error code: {0}!",
+        "create_semaphore" : "Failed to create semaphore {1} for group \"{0}\". Error code: {2}!",
+        "create_fence" : "Failed to create fence {1} for group \"{0}\". Error code: {2}!",
+        "queue_present" : "Queue presentation error. Error code: {0}!"
+    },
+    "check" : {
+        "glfw_ext" : "GLFW supports {0} extensions:",
+        "vk_instance_ext" : "VulkanInstance supports {0} extensions:",
+        "vk_instance_layers" : "VulkanInstance supports {0} layers:",
+        "physical_device" : "Found {0} physical devices:",
+        "gpu_score" : "GPU \"{}\" score: {:.2f}.",
+        "gpu_score_with_exts" : "GPU \"{}\" score: {:.2f}, supports {} extensions:",
+        "vk_device_ext" : "Selected device supports {0} extensions.",
+        "begin_scoring" : "Starting scoring:\n-1: Geometry shader requested but not supported\n-2: Fixed setting in configuration\n-3: Graphics and Present families not available on same queue\n-4: Requested extensions not supported\n-5: Incomplete SwapChain support",
+        "fps" : "Average FPS:"
+    },
+    "cleanup" : "Cleaning up..."
 }

@@ -54,9 +54,9 @@ void App::_vk_create_sync_objects(){
     fence_ci.sType = VST(FENCE_CREATE_INFO);
     fence_ci.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    auto create_semaphore = [&,this](std::string_view desc,VkSemaphore & s){
+    auto create_semaphore = [&,this](std::string_view desc,size_t index,VkSemaphore & s){
         if(VkResult result = vkCreateSemaphore(device,&semaphore_ci,allocator,&s)){
-            lg(Error,*translator,"bad.create_semaphore",desc,(int)result) << endlog;
+            lg(Error,*translator,"bad.create_semaphore",desc,index,(int)result) << endlog;
             throw "BG";
         }
         defer_mgr.defer([this,s]{
@@ -64,21 +64,28 @@ void App::_vk_create_sync_objects(){
         });
     };
 
-    auto create_fence = [&,this](std::string_view desc,VkFence & s){
+    auto create_fence = [&,this](std::string_view desc,size_t index,VkFence & s){
         if(VkResult result = vkCreateFence(device,&fence_ci,allocator,&s)){
-            lg(Error,*translator,"bad.create_fence",desc,(int)result) << endlog;
+            lg(Error,*translator,"bad.create_fence",desc,index,(int)result) << endlog;
             throw "BG";
         }
         defer_mgr.defer([this,s]{
             vkDestroyFence(device,s,allocator);
         });
     };
+    sync_object_count = swapchain_views.size();
 
-    create_semaphore("image_available", sem_img_available);
-    create_semaphore("render_finished", sem_render_fin);
-    create_fence("in_flight", fen_in_flight);
+    fen_in_flights.resize(sync_object_count,VK_NULL_HANDLE);
+    sem_img_available.resize(sync_object_count,VK_NULL_HANDLE);
+    sem_render_fin.resize(sync_object_count,VK_NULL_HANDLE);
 
-    lg(Info,*translator,"ok.sync") << endlog;
+    for(size_t i = 0;i < fen_in_flights.size();++i){
+        create_semaphore("image_available",i, sem_img_available[i]);
+        create_semaphore("render_finished",i, sem_render_fin[i]);
+        create_fence("in_flight",i, fen_in_flights[i]);
+    }
+
+    lg(Info,*translator,"ok.sync",sync_object_count) << endlog;
 }
 
 void App::vk_record_command_buffer(VkCommandBuffer buffer,uint32_t image_index){
@@ -103,9 +110,9 @@ void App::vk_record_command_buffer(VkCommandBuffer buffer,uint32_t image_index){
     render_bi.clearValueCount = 1;
     render_bi.pClearValues = &clear_color;
     
-    vkCmdBeginRenderPass(cmd_buffer,&render_bi, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(buffer,&render_bi, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(cmd_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,graphics_pipeline);
+    vkCmdBindPipeline(buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,graphics_pipeline);
 
     VkViewport viewport {};
     viewport.x = 0.0f;
@@ -114,29 +121,32 @@ void App::vk_record_command_buffer(VkCommandBuffer buffer,uint32_t image_index){
     viewport.height = (float)(swap_extent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(cmd_buffer, 0, 1, &viewport);
+    vkCmdSetViewport(buffer, 0, 1, &viewport);
 
     VkRect2D scissor {};
     scissor.offset = {0,0};
     scissor.extent = swap_extent;
 
-    vkCmdSetScissor(cmd_buffer, 0, 1, &scissor);
+    vkCmdSetScissor(buffer, 0, 1, &scissor);
 
-    vkCmdDraw(cmd_buffer,3,1,0,0);
-    vkCmdEndRenderPass(cmd_buffer);
-    if(VkResult result = vkEndCommandBuffer(cmd_buffer)){
+    vkCmdDraw(buffer,3,1,0,0);
+    vkCmdEndRenderPass(buffer);
+    if(VkResult result = vkEndCommandBuffer(buffer)){
         lg(Error,*translator,"bad.end_cmd_buffer",(int)result) << endlog;
     }
 }
 
 void App::_vk_create_command_buffer(){
+    sync_object_count = swapchain_views.size();
+
     VkCommandBufferAllocateInfo allocate_ci {};
     allocate_ci.sType = VST(COMMAND_BUFFER_ALLOCATE_INFO);
-    allocate_ci.commandBufferCount = 1;
+    allocate_ci.commandBufferCount = sync_object_count;
     allocate_ci.commandPool = cmd_pool;
     allocate_ci.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-    if(VkResult result = vkAllocateCommandBuffers(device,&allocate_ci, &cmd_buffer)){
+    cmd_buffers.resize(sync_object_count,VK_NULL_HANDLE);
+    if(VkResult result = vkAllocateCommandBuffers(device,&allocate_ci, cmd_buffers.data())){
         lg(Error,*translator,"bad.allocate_cmd_buffer",(int)result) << endlog;
         throw "BG";
     }
@@ -210,12 +220,22 @@ void App::_vk_create_render_pass(){
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &color_ref;
 
+    VkSubpassDependency dependency {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
     VkRenderPassCreateInfo render_pass_ci {};
     render_pass_ci.sType = VST(RENDER_PASS_CREATE_INFO);
     render_pass_ci.attachmentCount = 1;
     render_pass_ci.pAttachments = &color_attachment;
     render_pass_ci.subpassCount = 1;
     render_pass_ci.pSubpasses = &subpass;
+    render_pass_ci.dependencyCount = 1;
+    render_pass_ci.pDependencies = &dependency;
 
     if(VkResult result = vkCreateRenderPass(device,&render_pass_ci,allocator,&render_pass)){
         lg(Error,*translator,"bad.create_render_pass",(int)result) << endlog;

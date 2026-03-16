@@ -21,7 +21,7 @@
         "create_framebuffer" : "成功创建{}个Framebuffer.",
         "create_cmd_pool" : "成功创建CommandPool.",
         "create_cmd_buffer" : "成功创建CommandBuffer.",
-        "sync" : "成功创建所有同步对象."
+        "sync" : "成功创建所有同步对象,共{}组同步对象."
     },
     "shader_type":{
         "vert" : "顶点着色器(SPV)",
@@ -54,8 +54,9 @@
         "allocate_cmd_buffer" : "创建VkCommanBuffer时失败,错误码{0}!",
         "begin_cmd_buffer" : "开启CommanBuffer失败,错误码{0}!",
         "end_cmd_buffer" : "关闭CommanBuffer失败,错误码{0}!",
-        "create_semaphore" : "创建信号量\"{0}\"时失败,错误码{1}!",
-        "create_fence" : "创建栅栏\"{0}\"时失败,错误码{1}!"
+        "create_semaphore" : "创建信号量组\"{0}\"的第{1}个时失败,错误码{2}!",
+        "create_fence" : "创建栅栏组\"{0}\"的第{1}个栅栏时失败,错误码{2}!",
+        "queue_present" : "呈现队列错误,错误码{0}!"
     },
     "check" : {
         "glfw_ext" : "GLFW支持{0}个扩展,为:",
@@ -65,7 +66,8 @@
         "gpu_score" : "GPU\"{}\"得分为{:.2f}.",
         "gpu_score_with_exts" : "GPU\"{}\"得分为{:.2f},支持{}个扩展:",
         "vk_device_ext" : "对应显卡设备支持{0}个扩展.",
-        "begin_scoring" : "开始打分:\n-1分:要求几何着色器但不支持\n-2分:配置中固定设置\n-3分:显卡的图形族以及呈现族不是同时完备的\n-4分:用户给出的扩展需求不支持\n-5分:SwapChain支持不完备"
+        "begin_scoring" : "开始打分:\n-1分:要求几何着色器但不支持\n-2分:配置中固定设置\n-3分:显卡的图形族以及呈现族不是同时完备的\n-4分:用户给出的扩展需求不支持\n-5分:SwapChain支持不完备",
+        "fps" : "平均帧率:"
     },
     "cleanup" : "清理中......"
 }

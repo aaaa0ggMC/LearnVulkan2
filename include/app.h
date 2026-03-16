@@ -57,7 +57,7 @@ struct App{
 
     int run();
     void endup();
-    void draw();
+    void draw(size_t&);
 
     /// Vulkan相关
     VkInstance instance { VK_NULL_HANDLE };
@@ -82,10 +82,12 @@ struct App{
     VkPipeline graphics_pipeline { VK_NULL_HANDLE };
     std::vector<VkFramebuffer> framebuffers;
     VkCommandPool cmd_pool { VK_NULL_HANDLE };
-    VkCommandBuffer cmd_buffer { VK_NULL_HANDLE };
-    VkSemaphore sem_img_available { VK_NULL_HANDLE };
-    VkSemaphore sem_render_fin { VK_NULL_HANDLE };
-    VkFence fen_in_flight { VK_NULL_HANDLE };
+    std::vector<VkCommandBuffer> cmd_buffers;
+
+    uint32_t sync_object_count { 0 };
+    std::vector<VkSemaphore> sem_img_available;
+    std::vector<VkSemaphore> sem_render_fin;
+    std::vector<VkFence> fen_in_flights;
 
     /// 指向不会变的adata
     std::vector<const char *> valid_device_extensions;
