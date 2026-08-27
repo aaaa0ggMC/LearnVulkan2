@@ -1,16 +1,19 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.28)
 
-project(learnvulkan2)
+project(learnvulkan2 LANGUAGES CXX)
 
-include_directories(./include)
-
-aux_source_directory("./src" SRC)
-add_executable(learn_vulkan ${SRC})
-target_compile_options(learn_vulkan PRIVATE -std=c++26 -freflection)
-target_link_libraries(learn_vulkan PRIVATE glfw aaaa0ggmcLib vulkan)
-target_compile_definitions(learn_vulkan PRIVATE GLFW_INCLUDE_VULKAN ALIB5_USE_VULKAN_H ALIB5_ENABLE_REFLECTION)
-target_link_options(learn_vulkan PRIVATE 
-  -Wl,--rpath,/usr/local/lib
-)
-
+set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include_directories(include /usr/local/include)
+link_directories(/usr/local/lib)
+
+file(GLOB_RECURSE SRC "src/*.cpp")
+file(GLOB_RECURSE ALIB6_MODULES "/usr/local/include/alib6/*.cppm")
+
+add_executable(learn_vulkan ${SRC} ${ALIB6_MODULES})
+target_compile_options(learn_vulkan PRIVATE -std=c++26 -freflection)
+target_compile_definitions(learn_vulkan PRIVATE GLFW_INCLUDE_VULKAN)
+target_link_libraries(learn_vulkan PRIVATE aaaa0ggmcLib6 glfw vulkan stdc++exp)
+target_link_options(learn_vulkan PRIVATE -Wl,--rpath,/usr/local/lib)
