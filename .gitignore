@@ -1,6 +1,10 @@
 .cache
 build
 compile_commands.json
+*.log
+.xmake/
+.vscode/
+
 # Prerequisites
 *.d
 

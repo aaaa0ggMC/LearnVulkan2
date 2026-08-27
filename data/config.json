@@ -1,5 +1,5 @@
 {
-    "language" : "en_us",
+    "language" : "zh_cn",
     "vulkan" : {
         "instance_extensions" : [
             "VK_KHR_portability_enumeration",

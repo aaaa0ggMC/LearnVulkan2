@@ -1,92 +1,97 @@
-#include <app.h>
-#include <alib5/aclock.h>
+#include "app.h"
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include <vector>
+#include <string>
 
-using namespace alib5;
-using enum Severity;
+import alib6;
 
-void App::setup(){
+using namespace alib6;
+using namespace alib6::log;
+
+void App::setup() {
     _setup_logger();
     _setup_language();
     _setup_glfw();
     _setup_vulkan();
 }
 
-void App::endup(){
-    lg << translator->translate("cleanup") << endlog;
+void App::endup() {
+    if (translator) {
+        lg << translator->translate("cleanup") << endlog;
+    }
 }
 
-void App::_setup_glfw(){
+void App::_setup_glfw() {
     glfwInit();
-    defer_mgr.defer([]{
+    defer_mgr.defer([] {
         glfwTerminate();
     });
 
-    // 检查vulkan支持
-    if(glfwVulkanSupported()){
+    // 检查 Vulkan 支持
+    if (glfwVulkanSupported()) {
         lg << translator->translate("ok.vulkan") << endlog;
-    }else{
-        lg(Error) << translator->translate("bad.vulkan") << endlog;
-        throw "Bad GUY!";
+    } else {
+        lg(LogLevel::Error) << translator->translate("bad.vulkan") << endlog;
+        throw "Bad GLFW Vulkan support!";
     }
 
-    // 初始化GLFW
-    glfwWindowHint(GLFW_CLIENT_API,GLFW_NO_API);
-    // 目前处理resize比较复杂
-    ///  @todo 未来学习过程中尝试支持
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE );
+    // 初始化 GLFW 配置
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    // 创建窗口
-    auto width = config.jump("/window/width").to<uint32_t>();
-    auto height = config.jump("/window/height").to<uint32_t>();
-    auto title = config.jump("/window/title").to<std::string_view>();
+    // 基于强类型反射配置创建窗口
+    uint32_t width = app_cfg.window.width;
+    uint32_t height = app_cfg.window.height;
+    const std::string& title = app_cfg.window.title;
 
     window = glfwCreateWindow(
-        width,
-        height,
-        title.data(),
+        static_cast<int>(width),
+        static_cast<int>(height),
+        title.c_str(),
         nullptr,
         nullptr
     );
 
-    if(!window){
-        const char * desc;
+    if (!window) {
+        const char* desc = nullptr;
         int code = glfwGetError(&desc);
-        lg(Error) << translator->translate("bad.window",width,height,title,code,desc) << endlog;
-        throw "Bad GUY!";
+        lg(LogLevel::Error) << translator->translate("bad.window", width, height, title, code, desc ? desc : "Unknown") << endlog;
+        throw "Failed to create GLFW window!";
     }
-    defer_mgr.defer([this]{
-        glfwDestroyWindow(window);
+
+    defer_mgr.defer([this] {
+        if (window) glfwDestroyWindow(window);
     });
 
-    lg(Info) << translator->translate("ok.window",width,height,title) << endlog;
+    lg(LogLevel::Info) << translator->translate("ok.window", width, height, title) << endlog;
 }
 
-void App::_setup_language(){
+void App::_setup_language() {
     full_translator.load_from_entry(
         io::load_entry("./data/translations")
     );
 
-    full_translator.switch_language(config["language"].to<std::string_view>());
-    auto t = full_translator.flatten_dots();
-    if(!t){
+    full_translator.switch_language(app_cfg.language);
+    auto t = full_translator.flatten_dots(app_cfg.language);
+    if (!t) {
         std::vector<std::string> supports;
-        for(auto proxy : full_translator.data().object()){
+        for (auto proxy : full_translator.data().object()) {
             supports.emplace_back(proxy.first());
         }
-        lg << "Translations failed to load!Supported languages:" << supports << alib5::endlog;
-        throw "BAD GUY!";
+        lg(LogLevel::Error) << "Translations failed to load! Supported languages: " << supports << endlog;
+        throw "Translations failed to load!";
     }
-    translator.emplace(*t);
-    lg(Info) << translator->translate<false>(
+    translator.emplace(std::move(*t));
+    lg(LogLevel::Info) << translator->translate(
         "test",
         translator->translate("title")
     ) << endlog;
 }
 
-void App::_setup_logger(){
-    logger.append_mod<lot::Console>("console");
-    logger.append_mod<lot::RotateFile>("file",lot::RotateFileConfig("latest{1}.log"));
+void App::_setup_logger() {
+    logger.append_mod<alib6::log::Console>("console");
+    logger.append_mod<alib6::log::RotateFile>("file", alib6::log::RotateFileConfig("latest{1}.log"));
 
-    lg << "Log system has initialized." << alib5::endlog;
+    lg << "Log system has initialized." << endlog;
 }

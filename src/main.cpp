@@ -1,70 +1,89 @@
 /**
  * @file main.cpp
  * @author aaaa0ggmc (lovelinux@yslwd.eu.org)
- * @brief 概念性项目,展示alib5的实力,同时尝试涉足Vulkan
- * @version 5.0
- * @date 2026-03-13
+ * @brief LearnVulkan2 应用程序入口，全面应用 alib6 模块与静态反射机制
+ * @version 6.0
+ * @date 2026-08-27
  * 
  * @copyright Copyright (c) 2026
  * 
  */
-#include <app.h>
-#include <schema.h>
+#include <iostream>
+#include <memory_resource>
+#include <print>
+#include "app.h"
+#include "schema.h"
 
-using namespace alib5;
+import alib6;
 
-int main(){
-    //// 内存池 ////
-    std::pmr::synchronized_pool_resource _res;
-    std::pmr::memory_resource * res = &_res;
-    //// 读取配置文件 ////
-    // 解析器
+namespace pmr = std::pmr;
+using namespace alib6;
+using namespace alib6::log;
+
+int main() {
+    //// 1. 初始化 PMR 内存池 ////
+    pmr::synchronized_pool_resource _res;
+    pmr::memory_resource* res = &_res;
+
+    //// 2. 读取并解析原始 JSON 配置文件 ////
     auto parser = data::JSON(
         data::JSONConfig{
             .rapidjson_recursive = false,
             .allow_comments = true
         }
     );
-    // 校验器
-    alib5::Validator validator(res);
-    alib5::AData schema(res);
-    schema.load_from_memory(str_schema,parser);
-    {
-        auto msg = validator.from_adata(schema);
-        // 理论上不会出问题
-        panic_if(msg.size(),msg);
-    }
-    // 核心配置
-    alib5::AData config(res);
-    config.load_from_file("./data/config.json",parser);
-    // 校验
-    {
-        auto result = validator.validate(config);
-        panicf_if(!result.success,"{}",result.recorded_errors);
+
+    pmr::string config_content(res);
+    usize bytes_read = io::read_all("./data/config.json", config_content);
+    if (bytes_read == std::numeric_limits<usize>::max()) {
+        panicf("Failed to read configuration file: ./data/config.json");
     }
 
-    // 日志配置
-    LoggerConfig logger_cfg;
-    LogFactoryConfig lg_cfg;
-
-    {
-        auto & cfg = config["logger"].object();
-        logger_cfg.enable_back_pressure = cfg["back_pressure"].to<bool>();
-        logger_cfg.consumer_count = cfg["consumer_count"].to<uint32_t>();
-        logger_cfg.fetch_message_count_max = cfg["fetch_message_count_max"].to<uint32_t>();
-        logger_cfg.back_pressure_multiply = cfg["back_pressure_multiply"].to<uint32_t>();
-        lg_cfg.header = cfg["header"].to<std::string_view>();
+    AData config(res);
+    bool parsed = parser.parse(config_content, config);
+    if (!parsed) {
+        panicf("Failed to parse JSON configuration file: ./data/config.json");
     }
 
+    //// 3. 静态反射生成 Schema 规则树 (废弃旧版硬编码 str_schema) ////
+    AData schema = generate_schema<ApplicationConfig>(res);
 
-    try{
-        App app(config,logger_cfg,lg_cfg,res);
+    //// 4. 校验与默认值自动注入 ////
+    Validator validator(schema, res);
+    auto val_result = validator.validate(config);
+    if (!val_result.success) {
+        for (const auto& err_msg : val_result.recorded_errors) {
+            std::println(std::cerr, "[Config Error] {}", err_msg);
+        }
+        panicf("Configuration validation failed against statically reflected schema!");
+    }
+
+    //// 5. 静态反射反序列化为强类型 C++ 结构体 ApplicationConfig ////
+    // 同时自动执行 [[=alib6::attr::fill_by<"logger">{}]] 将 logger 异类对齐注入 actual_logger 与 actual_factory
+    ApplicationConfig app_cfg{};
+    bool deseri_ok = from_adata(app_cfg, config);
+    if (!deseri_ok) {
+        panicf("Failed to reflectively deserialize AData into ApplicationConfig!");
+    }
+
+    //// 6. 反射双向序列化一致性验证 (排查 alib6 反射潜在 BUG) ////
+    AData re_exported = to_adata(app_cfg, res);
+    if (!re_exported.is_object()) {
+        panicf("Reflective to_adata validation failed!");
+    }
+
+    try {
+        App app(app_cfg, config, res);
         app.setup();
         return app.run();
-    }catch(const std::exception & e){
-        std::cerr << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::println(std::cerr, "Exception caught in main: {}", e.what());
         return -1;
-    }catch(...){
+    } catch (const char* msg) {
+        std::println(std::cerr, "Error caught in main: {}", msg);
+        return -1;
+    } catch (...) {
+        std::println(std::cerr, "Unknown error caught in main");
         return -1;
     }
 }

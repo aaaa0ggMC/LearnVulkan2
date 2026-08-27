@@ -1,53 +1,67 @@
 #ifndef LEARN_VK_APP_H
 #define LEARN_VK_APP_H
-#include <alib5/alogger.h>
-#include <alib5/adata.h>
-#include <alib5/atranslator.h>
+
+#include <optional>
+#include <vector>
+#include <string>
+#include <string_view>
+#include <memory_resource>
+#include <cstdint>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include "schema.h"
 
-struct QueueFamilyIndices{
+import alib6;
+
+struct QueueFamilyIndices {
     std::optional<uint32_t> graphics;
     std::optional<uint32_t> present;
 
-    bool is_complete(){
-        return (bool)graphics && (bool)present;
+    bool is_complete() const noexcept {
+        return graphics.has_value() && present.has_value();
     }
 };
 
-struct SwapChainSupportDetails{
+struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities {};
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> present_modes;
 };
 
-struct App{
-    /// 日志
-    alib5::Logger logger;
-    alib5::LogFactory lg;
-    alib5::LogFactory vk_validation_lg;
+struct App {
+    /// 强类型反射配置与动态数据
+    ApplicationConfig & app_cfg;
+    alib6::AData & config;
 
-    /// 配置文件
-    alib5::AData & config;
+    /// 日志
+    alib6::log::Logger logger;
+    alib6::log::LogFactory lg;
+    alib6::log::LogFactory vk_validation_lg;
 
     /// 语言类
-    alib5::Translator full_translator;
-    std::optional<alib5::FlattenTranslator> translator;
+    alib6::Translator full_translator;
+    std::optional<alib6::FlattenTranslator> translator;
 
     /// 窗口
-    GLFWwindow * window;
+    GLFWwindow * window { nullptr };
 
     /// VK分配器
     VkAllocationCallbacks * allocator { nullptr };
 
-    App(alib5::AData & iconfig,alib5::LoggerConfig cfg0,alib5::LogFactoryConfig cfg1,std::pmr::memory_resource * __a = ALIB5_DEFAULT_MEMORY_RESOURCE)
-    :config(iconfig)
-    ,logger(cfg0)
-    ,lg(logger,cfg1)
-    ,vk_validation_lg(logger,"VulkanValidation")
-    ,full_translator(__a){}
+    App(
+        ApplicationConfig & iapp_cfg,
+        alib6::AData & iconfig,
+        std::pmr::memory_resource * __a = alib6::get_default_resource()
+    )
+        : app_cfg(iapp_cfg)
+        , config(iconfig)
+        , logger(app_cfg.actual_logger, __a)
+        , lg(logger, app_cfg.actual_factory)
+        , vk_validation_lg(logger, "VulkanValidation")
+        , full_translator(__a)
+        , defer_mgr(__a) {}
 
-    ~App(){ endup(); }
+    ~App() { endup(); }
 
     void setup();
     void _setup_logger();
@@ -57,7 +71,7 @@ struct App{
 
     int run();
     void endup();
-    void draw(size_t&);
+    void draw(size_t &);
 
     /// Vulkan相关
     VkInstance instance { VK_NULL_HANDLE };
@@ -89,11 +103,10 @@ struct App{
     std::vector<VkSemaphore> sem_render_fin;
     std::vector<VkFence> fen_in_flights;
 
-    /// 指向不会变的adata
+    /// 指向不会变的设备扩展与验证配置
     std::vector<const char *> valid_device_extensions;
     int enable_validation_layer_steps { 2 };
-    bool allow_posts [5] {true};
-
+    bool allow_posts [5] {true, true, true, true, true};
 
     void _vk_create_instance();
     void _vk_setup_debug_callback();
@@ -112,10 +125,10 @@ struct App{
     void _vk_create_command_buffer();
     void _vk_create_sync_objects();
 
-    void vk_record_command_buffer(VkCommandBuffer buffer,uint32_t image_index);
+    void vk_record_command_buffer(VkCommandBuffer buffer, uint32_t image_index);
 
-    // 资源释放,要做到最晚定义这样才能最早析构
-    alib5::misc::DeferManager defer_mgr;
+    // 资源释放管理器 (最晚声明最早析构)
+    alib6::DeferManager defer_mgr;
 };
 
-#endif
+#endif // LEARN_VK_APP_H

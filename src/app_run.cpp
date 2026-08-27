@@ -1,34 +1,39 @@
-#include <app.h>
+#include "app.h"
+#include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 
-using enum alib5::Severity;
-using namespace alib5;
+import alib6;
 
+using namespace alib6;
+using namespace alib6::log;
 
-int App::run(){
+int App::run() {
     static uint64_t current_frame = 0;
 
     Clock clk;
-    while(!glfwWindowShouldClose(window)){
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         draw(current_frame);
     }
     vkDeviceWaitIdle(device);
 
-    lg(Info,*translator,"check.fps") << log_tfmt("{:.2f}") << current_frame / clk.get_all() * 1000 << endlog;
+    double elapsed_ms = clk.get_all();
+    double fps = (elapsed_ms > 0.0) ? (current_frame / elapsed_ms * 1000.0) : 0.0;
+    lg(LogLevel::Info) << translator->translate("check.fps") << " " << log_tfmt("{:.2f}") << fps << endlog;
     return 0;
 }
 
-void App::draw(size_t & current_frame){
+void App::draw(size_t & current_frame) {
     uint64_t sync_index = current_frame % sync_object_count;
     auto & fence = fen_in_flights[sync_index];
     auto & semaphore_img = sem_img_available[sync_index];
     auto & cmd_buffer = cmd_buffers[sync_index];
 
-    vkWaitForFences(device, 1, &fence ,VK_TRUE, UINT64_MAX);
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
     
     uint32_t image_index = 0;
-    vkAcquireNextImageKHR(device,swapchain,UINT64_MAX,semaphore_img,VK_NULL_HANDLE,&image_index);
-    auto & seamphore_render = sem_render_fin[image_index];
+    vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphore_img, VK_NULL_HANDLE, &image_index);
+    auto & semaphore_render = sem_render_fin[image_index];
 
     vkResetFences(device, 1, &fence);
 
@@ -36,7 +41,7 @@ void App::draw(size_t & current_frame){
     vk_record_command_buffer(cmd_buffer, image_index);
 
     VkSubmitInfo submit_info {};
-    submit_info.sType =  VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     
     VkSemaphore wait_semaphores[] = { semaphore_img };
     VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -47,13 +52,13 @@ void App::draw(size_t & current_frame){
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &cmd_buffer;
     
-    VkSemaphore signal_semaphores[] = { seamphore_render };
+    VkSemaphore signal_semaphores[] = { semaphore_render };
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
-    if(VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, fence)){
-        lg(Error,*translator,"bad.sumbit_queue",(int)result) << endlog;
-        throw "BG";
+    if (VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, fence)) {
+        lg(LogLevel::Error) << translator->translate("bad.sumbit_queue", static_cast<int>(result)) << endlog;
+        throw "Failed to submit draw command buffer!";
     }
     
     VkPresentInfoKHR present_info {};
@@ -67,9 +72,9 @@ void App::draw(size_t & current_frame){
     present_info.pImageIndices = &image_index;
     present_info.pResults = nullptr;
 
-    if(VkResult result = vkQueuePresentKHR(graphics_queue,&present_info)){
-        lg(Error,*translator,"bad.queue_present",(int)result) << endlog;
-        throw "Bad GUYYYY";
+    if (VkResult result = vkQueuePresentKHR(graphics_queue, &present_info)) {
+        lg(LogLevel::Error) << translator->translate("bad.queue_present", static_cast<int>(result)) << endlog;
+        throw "Failed to present queue!";
     }    
 
     ++current_frame;

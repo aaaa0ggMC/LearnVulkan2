@@ -6,9 +6,9 @@ include_directories(./include)
 
 aux_source_directory("./src" SRC)
 add_executable(learn_vulkan ${SRC})
-target_compile_options(learn_vulkan PRIVATE -std=c++26)
+target_compile_options(learn_vulkan PRIVATE -std=c++26 -freflection)
 target_link_libraries(learn_vulkan PRIVATE glfw aaaa0ggmcLib vulkan)
-target_compile_definitions(learn_vulkan PRIVATE GLFW_INCLUDE_VULKAN ALIB5_USE_VULKAN_H)
+target_compile_definitions(learn_vulkan PRIVATE GLFW_INCLUDE_VULKAN ALIB5_USE_VULKAN_H ALIB5_ENABLE_REFLECTION)
 target_link_options(learn_vulkan PRIVATE 
   -Wl,--rpath,/usr/local/lib
 )
