@@ -18,7 +18,6 @@ import alib6;
 
 namespace pmr = std::pmr;
 using namespace alib6;
-using namespace alib6::log;
 
 int main() {
     //// 1. 初始化 PMR 内存池 ////

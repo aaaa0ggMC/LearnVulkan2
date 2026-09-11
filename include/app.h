@@ -34,9 +34,9 @@ struct App {
     alib6::AData & config;
 
     /// 日志
-    alib6::log::Logger logger;
-    alib6::log::LogFactory lg;
-    alib6::log::LogFactory vk_validation_lg;
+    alib6::Logger logger;
+    alib6::LogFactory lg;
+    alib6::LogFactory vk_validation_lg;
 
     /// 语言类
     alib6::Translator full_translator;

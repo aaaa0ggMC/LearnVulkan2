@@ -5,21 +5,28 @@
 import alib6;
 
 using namespace alib6;
-using namespace alib6::log;
 
 int App::run() {
     static uint64_t current_frame = 0;
 
     Clock clk;
+    int stage = 0;
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         draw(current_frame);
+
+        if(clk.get_all() >= stage){
+            stage += 4'000;
+            lg << current_frame / clk.get_all() * 1000 << endlog;
+        }
+
     }
-    vkDeviceWaitIdle(device);
 
     double elapsed_ms = clk.get_all();
     double fps = (elapsed_ms > 0.0) ? (current_frame / elapsed_ms * 1000.0) : 0.0;
     lg(LogLevel::Info) << translator->translate("check.fps") << " " << log_tfmt("{:.2f}") << fps << endlog;
+    
+    vkDeviceWaitIdle(device);
     return 0;
 }
 

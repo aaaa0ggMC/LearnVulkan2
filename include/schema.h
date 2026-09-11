@@ -153,10 +153,10 @@ struct ApplicationConfig {
     cfg::Window window{};
     cfg::Vulkan vulkan{};
 
-    // 异类填充: 自动将 logger 注入到实际 alib6::log::LoggerConfig / alib6::log::LogFactoryConfig
+    // 异类填充: 自动将 logger 注入到实际 alib6::LoggerConfig / alib6::LogFactoryConfig
     [[=alib6::attr::fill_by<"logger">{}]]
-    alib6::log::LoggerConfig actual_logger{};
+    alib6::LoggerConfig actual_logger{};
 
     [[=alib6::attr::fill_by<"logger">{}]]
-    alib6::log::LogFactoryConfig actual_factory{};
+    alib6::LogFactoryConfig actual_factory{};
 };

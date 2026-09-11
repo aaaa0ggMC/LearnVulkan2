@@ -17,7 +17,6 @@ import alib6;
 #define VST(X) VK_STRUCTURE_TYPE_##X
 
 using namespace alib6;
-using namespace alib6::log;
 
 namespace {
     inline std::string vulkan_api_to_string(uint32_t spec) {
@@ -29,9 +28,9 @@ namespace {
         );
     }
 
-    inline auto color_cyan() { return alib6::log::color(alib6::log::Color::Cyan); }
-    inline auto color_blue() { return alib6::log::color(alib6::log::Color::Blue); }
-    inline auto color_none() { return alib6::log::color(alib6::log::Color::None); }
+    inline auto color_cyan() { return alib6::lot::color(alib6::lot::Color::Cyan); }
+    inline auto color_blue() { return alib6::lot::color(alib6::lot::Color::Blue); }
+    inline auto color_none() { return alib6::lot::color(alib6::lot::Color::None); }
 }
 
 void App::_setup_vulkan() {

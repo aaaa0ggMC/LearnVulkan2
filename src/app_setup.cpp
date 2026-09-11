@@ -7,7 +7,6 @@
 import alib6;
 
 using namespace alib6;
-using namespace alib6::log;
 
 void App::setup() {
     _setup_logger();
@@ -90,8 +89,8 @@ void App::_setup_language() {
 }
 
 void App::_setup_logger() {
-    logger.append_mod<alib6::log::Console>("console");
-    logger.append_mod<alib6::log::RotateFile>("file", alib6::log::RotateFileConfig("latest{1}.log"));
+    logger.append_mod<alib6::lot::Console>("console");
+    logger.append_mod<alib6::lot::RotateFile>("file", alib6::lot::RotateFileConfig("latest{1}.log"));
 
     lg << "Log system has initialized." << endlog;
 }
